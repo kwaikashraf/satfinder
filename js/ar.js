@@ -105,7 +105,10 @@ class ARHandler {
             window.addEventListener('resize', () => this.resizeCanvas());
 
             // Hide start button and error
-            if (btn) btn.classList.add('hidden');
+            if (btn) {
+                btn.classList.remove('visible');
+                btn.classList.add('hidden');
+            }
             this.hideError();
 
             this.render();
