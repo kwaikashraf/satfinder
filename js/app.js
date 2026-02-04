@@ -25,6 +25,7 @@ class SatFinderApp {
         if (saved) {
             this.location = saved;
             this.updateLocationDisplay();
+            this.updateCalculations();
         }
 
         window.locationHandler.addListener((loc) => {
@@ -115,6 +116,10 @@ class SatFinderApp {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
         document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `${tabId}-tab`));
         if (tabId !== 'ar') window.arHandler.stop();
+        // Redraw map when switching to map tab
+        if (tabId === 'map') {
+            setTimeout(() => this.drawMap(), 100);
+        }
     }
 
     renderSatelliteList(filter = '', showFavoritesOnly = false) {
@@ -147,20 +152,27 @@ class SatFinderApp {
                 </div>`;
         }).join('');
 
+        // Use event delegation for better mobile touch handling
         list.querySelectorAll('.satellite-item').forEach(item => {
-            item.addEventListener('click', (e) => {
+            const handler = (e) => {
+                e.preventDefault();
                 if (!e.target.closest('.favorite-btn')) {
                     this.selectSatellite(this.satellites.find(s => s.name === item.dataset.name));
                 }
-            });
+            };
+            item.addEventListener('click', handler);
+            item.addEventListener('touchend', handler);
         });
 
         list.querySelectorAll('.favorite-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            const handler = (e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 const sat = this.satellites.find(s => s.name === btn.dataset.name);
                 if (sat) this.toggleFavorite(sat);
-            });
+            };
+            btn.addEventListener('click', handler);
+            btn.addEventListener('touchend', handler);
         });
     }
 
@@ -171,6 +183,7 @@ class SatFinderApp {
     selectSatellite(sat) {
         if (!sat) return;
         this.selectedSatellite = sat;
+        console.log('Selected satellite:', sat.name, 'Position:', sat.position);
 
         const el = document.getElementById('selectedSatellite');
         if (el) {
@@ -181,12 +194,20 @@ class SatFinderApp {
         const favBtn = document.getElementById('favoriteBtn');
         if (favBtn) favBtn.classList.toggle('active', this.favorites.includes(sat.name));
 
+        // Update AR with selected satellite
+        window.arHandler.setSelectedSatellite(sat);
+
+        // Calculate and update display
         this.updateCalculations();
+
+        // Set compass target after calculations
+        if (this.calculatedData) {
+            console.log('Calculated:', this.calculatedData);
+            window.compassHandler.setTarget(this.calculatedData.azimuth);
+        }
+
         this.renderSatelliteList(document.getElementById('satelliteSearch')?.value || '');
         this.switchTab('compass');
-
-        window.arHandler.setSelectedSatellite(sat);
-        window.compassHandler.setTarget(this.calculatedData?.azimuth);
     }
 
     updateCalculations() {
