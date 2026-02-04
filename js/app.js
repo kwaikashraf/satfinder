@@ -85,8 +85,18 @@ class SatFinderApp {
         document.getElementById('closeSettings')?.addEventListener('click', () => this.closeSettings());
         document.getElementById('applyCoords')?.addEventListener('click', () => this.applyManualCoords());
 
-        // AR button
-        document.getElementById('arStartBtn')?.addEventListener('click', () => this.startAR());
+        // AR button - add both click and touch for mobile
+        const arBtn = document.getElementById('arStartBtn');
+        if (arBtn) {
+            arBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.startAR();
+            });
+            arBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                this.startAR();
+            });
+        }
 
         // Volume slider
         document.getElementById('volumeSlider')?.addEventListener('input', (e) => {
@@ -115,7 +125,19 @@ class SatFinderApp {
         this.currentTab = tabId;
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
         document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.toggle('active', pane.id === `${tabId}-tab`));
-        if (tabId !== 'ar') window.arHandler.stop();
+
+        // Handle AR tab
+        if (tabId === 'ar') {
+            // Show AR start button if camera is not active
+            const btn = document.getElementById('arStartBtn');
+            if (btn && !window.arHandler.isActive) {
+                btn.classList.remove('hidden');
+                btn.classList.add('visible');
+            }
+        } else {
+            window.arHandler.stop();
+        }
+
         // Redraw map when switching to map tab
         if (tabId === 'map') {
             setTimeout(() => this.drawMap(), 100);
